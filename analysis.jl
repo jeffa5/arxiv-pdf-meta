@@ -7,22 +7,33 @@ using InteractiveUtils
 # ╔═╡ e36cd5b2-40d3-11ee-3e89-ddab6e52b7e5
 using PDFIO, DataFrames, StringEncodings
 
+# ╔═╡ 0da002c5-ee7b-4083-b045-2aa70920fc5a
+md"""
+# Data prep
+Set the directory that contains the arxiv pdf files.
+
+The structure of the directory should be:
+```
+arxiv-pdfs
+-> 2305
+-> -> 2305.0000001v1.pdf
+-> -> 2305.0000002v1.pdf
+-> 2306
+-> -> ...
+-> ...
+```
+"""
+
 # ╔═╡ 5ffd2614-fdde-4e82-ba10-46ff79d24c11
 pdfs_dir = "arxiv-pdfs"
-# structure is 
-# arxiv-pdfs
-# -- 2305
-# -- -- pdfs...
-# -- 2306
-# ...
 
 # ╔═╡ a6cbfe6e-cbd2-46cd-b5fb-4680c6e6db74
-# get a list of paths to the pdf files that are available
-function pdf_paths()
-	yearmonths = readdir(pdfs_dir)
+"get a list of paths to the pdf files that are available"
+function pdf_paths(root)
+	yearmonths = readdir(root)
 	pdf_files = []
 	for yearmonth in yearmonths
-		yearmonth_path = joinpath(pdfs_dir, yearmonth)
+		yearmonth_path = joinpath(root, yearmonth)
 		for pdf_file in readdir(yearmonth_path)
 			if endswith(pdf_file, ".gstmp") 
 				continue
@@ -34,19 +45,8 @@ function pdf_paths()
 	return pdf_files
 end
 
-# ╔═╡ 7e1651e0-9799-46a1-aa43-5900ed8d516d
-pdf_paths()[1:2]
-
-# ╔═╡ 905e60cf-a379-47c1-8790-760cb89139d3
-for pdf_file in pdf_paths()[1:2]
-	doc = pdDocOpen(pdf_file)
-	docinfo = pdDocGetInfo(doc)
-	pdDocClose(doc)
-	println(docinfo)
-end
-
 # ╔═╡ 13f81e3e-d5c3-464a-930e-9bdfdcf63087
-# get a dataframe of the metadata from all the pdf files given
+"get a dataframe of the metadata from all the pdf files given"
 function pdf_meta_df(paths)
 	df_all = DataFrame()
 	for pdf_file in paths
@@ -62,7 +62,7 @@ end
 
 # ╔═╡ b7b6924b-c78d-4c1c-b8ad-82ed4333daac
 begin
-	all_data = pdf_meta_df(pdf_paths())
+	all_data = pdf_meta_df(pdf_paths(pdfs_dir))
 	interesting_columns = ["Author", "Title", "Subject", "Keywords"]
 	# make empty strings actually just missing, they don't tell us anything
 	for col in interesting_columns
@@ -86,6 +86,30 @@ filter(:Title => a -> !ismissing(a), key_data)
 
 # ╔═╡ 3d47874e-815c-492d-83db-c6cb8626f5ba
 combine(groupby(key_data, :Author), nrow => "Count")
+
+# ╔═╡ 87e4b5f2-66e5-4b9c-8ee3-8ac9e756a03e
+md"""
+# Authors
+
+Multiple authors on a piece of work is not uncommon, but how do they get separated?
+Typically we'd expect either a comma `,` or a semicolon `;`.
+Additionally, the last author typically might have an `and` before them.
+"""
+
+# ╔═╡ 4c50f684-f080-4152-84f9-744633b9f3c1
+let
+	dropauthorkeys(s) = begin
+		r = ""
+		for c in s
+			if !occursin(r"^[[:alnum:] .-]*$", string(c))
+				r *= c
+			end
+		end
+		r
+	end
+	filtered = filter(x -> !ismissing(x), key_data.Author)
+	punc = map(x -> ("", dropauthorkeys(x)), filtered)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -503,15 +527,16 @@ version = "17.4.0+0"
 
 # ╔═╡ Cell order:
 # ╠═e36cd5b2-40d3-11ee-3e89-ddab6e52b7e5
+# ╟─0da002c5-ee7b-4083-b045-2aa70920fc5a
 # ╠═5ffd2614-fdde-4e82-ba10-46ff79d24c11
 # ╠═a6cbfe6e-cbd2-46cd-b5fb-4680c6e6db74
-# ╠═7e1651e0-9799-46a1-aa43-5900ed8d516d
-# ╠═905e60cf-a379-47c1-8790-760cb89139d3
 # ╠═13f81e3e-d5c3-464a-930e-9bdfdcf63087
 # ╠═b7b6924b-c78d-4c1c-b8ad-82ed4333daac
 # ╠═77390be4-47bd-487d-8850-757755690f81
 # ╠═378bdc3d-eefc-4cfc-a6cc-79d56d77da4e
 # ╠═57f2a165-1990-4ecd-89c2-e3998c33c291
 # ╠═3d47874e-815c-492d-83db-c6cb8626f5ba
+# ╟─87e4b5f2-66e5-4b9c-8ee3-8ac9e756a03e
+# ╠═4c50f684-f080-4152-84f9-744633b9f3c1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
