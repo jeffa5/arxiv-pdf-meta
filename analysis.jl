@@ -63,7 +63,7 @@ end
 # ╔═╡ b7b6924b-c78d-4c1c-b8ad-82ed4333daac
 begin
 	all_data = pdf_meta_df(pdf_paths(pdfs_dir))
-	interesting_columns = ["Author", "Title", "Subject", "Keywords"]
+	interesting_columns = ["Author", "Title", "Subject", "Keywords", "Path"]
 	# make empty strings actually just missing, they don't tell us anything
 	for col in interesting_columns
 		all_data[!, col] = replace(all_data[:, col], "" => missing)
