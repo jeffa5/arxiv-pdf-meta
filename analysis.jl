@@ -100,7 +100,12 @@ What about both!?
 describe(key_data, :nmissing, :nnonmissing)
 
 # ╔═╡ 93c89d1c-c903-4dd8-a198-05a2c5dc9b13
-nrow(filter([:Author, :Title] => (a, t) -> ismissing(a) && ismissing(t), key_data))
+begin
+	bothmissing = nrow(filter([:Author, :Title] => (a, t) -> ismissing(a) && ismissing(t), key_data))
+	md"""
+	Number of entries with both author and title field missing: $bothmissing
+	"""
+end
 
 # ╔═╡ 87e4b5f2-66e5-4b9c-8ee3-8ac9e756a03e
 md"""
@@ -552,8 +557,8 @@ version = "17.4.0+0"
 # ╠═57f2a165-1990-4ecd-89c2-e3998c33c291
 # ╠═3d47874e-815c-492d-83db-c6cb8626f5ba
 # ╟─508357c5-acdf-47d9-bb17-f3b4551406ba
-# ╠═4a3227fb-11bd-4765-9c29-60ff55dd91df
-# ╠═93c89d1c-c903-4dd8-a198-05a2c5dc9b13
+# ╟─4a3227fb-11bd-4765-9c29-60ff55dd91df
+# ╟─93c89d1c-c903-4dd8-a198-05a2c5dc9b13
 # ╟─87e4b5f2-66e5-4b9c-8ee3-8ac9e756a03e
 # ╠═4c50f684-f080-4152-84f9-744633b9f3c1
 # ╟─00000000-0000-0000-0000-000000000001
