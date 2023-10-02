@@ -9,7 +9,7 @@ To run the notebook you can launch the nix `devShell` and do the following:
 
 ```sh
 # launch julia, install Pluto and run it locally
-julia -e 'import Pkg; Pkg.add("Pluto"); import Pluto; Pluto.run()'
+julia --project=. -e 'import Pkg; Pkg.add("Pluto"); import Pluto; Pluto.run()'
 ```
 
 If you need to run the notebook and access it remotely then change the `run` command to be of the form:
