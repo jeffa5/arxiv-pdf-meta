@@ -4,19 +4,10 @@ A small effort to quantify how many papers on arXiv just don't bother with metad
 
 ## Running
 
-This is a project using Julia and Pluto notebooks.
-To run the notebook you can launch the nix `devShell` and do the following:
+This project is just a small rust binary that will print out some info and save more comprehensive data to a `results.csv`:
 
 ```sh
-# launch julia, install Pluto and run it locally
-julia --project=. -e 'import Pkg; Pkg.add("Pluto"); import Pluto; Pluto.run()'
-```
-
-If you need to run the notebook and access it remotely then change the `run` command to be of the form:
-
-```julia
-# ip address, port
-Pluto.run("0.0.0.0", 1234)
+cargo run --release
 ```
 
 ## Datasets

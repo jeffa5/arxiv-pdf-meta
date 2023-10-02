@@ -8,7 +8,6 @@
   in {
     devShells.${system}.default = pkgs.mkShell {
       packages = [
-        pkgs.julia
         pkgs.google-cloud-sdk
         pkgs.rustc
         pkgs.rustfmt
