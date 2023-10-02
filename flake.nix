@@ -10,6 +10,9 @@
       packages = [
         pkgs.julia
         pkgs.google-cloud-sdk
+        pkgs.rustc
+        pkgs.rustfmt
+        pkgs.cargo
       ];
     };
   };

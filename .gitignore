@@ -1,2 +1,9 @@
 .direnv/
 arxiv-pdfs/
+
+
+# Added by cargo
+
+/target
+
+results.csv
