@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.75"
-pdf = "0.8.1"
+csv = "1.2.2"
+pdf = { git = "https://github.com/pdf-rs/pdf", branch = "master" }
+serde = { version = "1.0.188", features = ["derive"] }

@@ -1,146 +1,102 @@
-use pdf::primitive::Primitive;
-use std::collections::BTreeMap;
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+#[derive(serde::Serialize)]
+struct Meta {
+    yearmonth: String,
+    filename: String,
+    title: String,
+    author: String,
+    keywords: String,
+}
 
 fn main() -> anyhow::Result<()> {
     let pdf_dir = "arxiv-pdfs";
     let month_years = fs::read_dir(&pdf_dir)?;
-    let mut files = Vec::new();
+
+    // bad paths
+    let ignored_paths = [
+        PathBuf::from("arxiv-pdfs/2001/2001.07824v1.pdf"),
+        PathBuf::from("arxiv-pdfs/2001/2001.07824v2.pdf"),
+        PathBuf::from("arxiv-pdfs/2001/2001.07824v3.pdf"),
+        PathBuf::from("arxiv-pdfs/2001/2001.07824v4.pdf"),
+    ];
+
     for month_year in month_years {
         let month_year = month_year?;
-        let pdf_files = fs::read_dir(month_year.path())?;
-        for pdf_file in pdf_files {
-            let path = pdf_file?.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("pdf") {
-                files.push(path);
-            } else {
-                println!("warning: path was not a pdf file: {:?}", path);
-            }
-        }
-    }
-
-    files.sort();
-
-    let mut names = BTreeMap::<String, usize>::new();
-
-    struct Meta {
-        path: String,
-        title: String,
-        author: String,
-        keywords: String,
-    }
-
-    #[derive(Debug)]
-    struct Data {
-        success: usize,
-        errors: usize,
-        title_length: BTreeMap<usize, usize>,
-        author_length: BTreeMap<usize, usize>,
-        keywords_length: BTreeMap<usize, usize>,
-        author_separators: BTreeMap<char, usize>,
-        keywords_separators: BTreeMap<char, usize>,
-    }
-
-    let mut data = Data {
-        success: 0,
-        errors: 0,
-        title_length: BTreeMap::default(),
-        author_length: BTreeMap::default(),
-        keywords_length: BTreeMap::default(),
-        author_separators: BTreeMap::default(),
-        keywords_separators: BTreeMap::default(),
-    };
-
-    let mut metas = Vec::new();
-
-    for file in &files {
-        let file_options = pdf::file::FileOptions::uncached();
-        if let Ok(pdf_file) = file_options.open(&file) {
-            data.success += 1;
-            if let Some(dict) = pdf_file.trailer.info_dict {
-                let title = dict
-                    .get("Title")
-                    .map(string_or_print_type)
-                    .unwrap_or_default();
-                *data.title_length.entry(title.len()).or_default() += 1;
-                let author = dict
-                    .get("Author")
-                    .map(string_or_print_type)
-                    .unwrap_or_default();
-                *data.author_length.entry(author.len()).or_default() += 1;
-                let keywords = dict
-                    .get("Keyword")
-                    .map(string_or_print_type)
-                    .unwrap_or_default();
-                *data.keywords_length.entry(keywords.len()).or_default() += 1;
-
-                for char in author.chars() {
-                    if char.is_ascii_punctuation() {
-                        *data.author_separators.entry(char).or_default() += 1;
-                    }
-                }
-                for char in keywords.chars() {
-                    if char.is_ascii_punctuation() {
-                        *data.keywords_separators.entry(char).or_default() += 1;
-                    }
-                }
-
-                metas.push(Meta {
-                    path: file.to_string_lossy().into_owned(),
-                    title,
-                    author,
-                    keywords,
-                });
-                for (name, _primitive) in dict {
-                    *names.entry(name.as_str().to_owned()).or_default() += 1;
-                }
-            }
-        } else {
-            data.errors += 1;
-            println!("Failed to open {:?}", file);
-        }
-    }
-
-    println!("{:#?}", names);
-    println!("{:#?}", data);
-    println!("files: {}", files.len(),);
-
-    let mut results_file = File::create("results.csv")?;
-    writeln!(results_file, "yearmonth,filename,Title,Author,Keywords")?;
-
-    for meta in metas {
-        let path = meta.path.strip_prefix(&format!("{}/", pdf_dir)).unwrap();
-        let (yearmonth, filename) = path.split_once("/").unwrap();
-        writeln!(
-            results_file,
-            "{},{},{:?},{:?},{:?}",
-            yearmonth, filename, meta.title, meta.author, meta.keywords
-        )?;
+        process_month_year(&month_year.path(), &ignored_paths)?;
     }
 
     Ok(())
 }
 
-fn primitive_type(prim: &Primitive) -> String {
-    match prim {
-        Primitive::Null => "null",
-        Primitive::Integer(_) => "integer",
-        Primitive::Number(_) => "number",
-        Primitive::Boolean(_) => "bool",
-        Primitive::String(_) => "string",
-        Primitive::Stream(_) => "stream",
-        Primitive::Dictionary(_) => "dictionary",
-        Primitive::Array(_) => "array",
-        Primitive::Reference(_) => "reference",
-        Primitive::Name(_) => "name",
-    }
-    .to_owned()
-}
+fn process_month_year(path: &Path, ignored_paths: &[PathBuf]) -> anyhow::Result<()> {
+    println!("Processing month year {:?}", path);
 
-fn string_or_print_type(prim: &Primitive) -> String {
-    if prim.as_string().is_err() {
-        println!("found a {}", primitive_type(prim));
+    let results_path = path.join("data.csv");
+    if results_path.exists() {
+        println!("Skipping {:?} as data file exists", path);
+        return Ok(());
     }
-    prim.to_string().unwrap()
+
+    let mut data_writer = csv::Writer::from_path(&results_path)?;
+
+    let mut i = 0;
+    let interval = 100;
+
+    let pdf_files = fs::read_dir(path)?;
+    for pdf_file in pdf_files {
+        let path = pdf_file?.path();
+        i += 1;
+        if i % interval == 0 {
+            println!("{:?}", path);
+        }
+        if path.is_file()
+            && path.extension().and_then(|s| s.to_str()) == Some("pdf")
+            && !ignored_paths.contains(&path)
+        {
+            let file_options = pdf::file::FileOptions::uncached();
+            match file_options.open(&path) {
+                Ok(pdf_file) => {
+                    if let Some(dict) = pdf_file.trailer.info_dict {
+                        let title = dict
+                            .title
+                            .and_then(|s| s.to_string().ok())
+                            .unwrap_or_default();
+                        let author = dict
+                            .author
+                            .and_then(|s| s.to_string().ok())
+                            .unwrap_or_default();
+                        let keywords = dict
+                            .keywords
+                            .and_then(|s| s.to_string().ok())
+                            .unwrap_or_default();
+
+                        let filename = path.file_name().unwrap().to_string_lossy().into_owned();
+                        let yearmonth = path
+                            .parent()
+                            .unwrap()
+                            .file_name()
+                            .unwrap()
+                            .to_string_lossy()
+                            .into_owned();
+
+                        data_writer.serialize(Meta {
+                            yearmonth,
+                            filename,
+                            title,
+                            author,
+                            keywords,
+                        })?;
+                    }
+                }
+                Err(error) => {
+                    println!("Failed to open file {:?}: {:?}", path, error);
+                }
+            }
+        } else {
+            println!("warning: path was not a pdf file: {:?}", path);
+        }
+    }
+    Ok(())
 }
