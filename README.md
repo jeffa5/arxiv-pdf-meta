@@ -10,6 +10,13 @@ This project is just a small rust binary that will print out some info and save 
 cargo run --release
 ```
 
+You can then generate some plots with Julia, running:
+```sh
+julia --project=.
+> include("analysis.jl")
+> main()
+```
+
 ## Datasets
 
 The notebook does not currently download the datasets itself, instead it expects them to be in a certain location.
