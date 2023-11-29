@@ -1,4 +1,8 @@
 {
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  };
+
   outputs = {
     self,
     nixpkgs,
@@ -9,9 +13,12 @@
     devShells.${system}.default = pkgs.mkShell {
       packages = [
         pkgs.google-cloud-sdk
+
         pkgs.rustc
         pkgs.rustfmt
         pkgs.cargo
+
+        pkgs.julia
       ];
     };
   };
