@@ -1,6 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use pdf::object::ParseOptions;
+
 #[derive(serde::Serialize)]
 struct Meta {
     yearmonth: String,
@@ -20,6 +22,7 @@ fn main() -> anyhow::Result<()> {
         PathBuf::from("arxiv-pdfs/2001/2001.07824v2.pdf"),
         PathBuf::from("arxiv-pdfs/2001/2001.07824v3.pdf"),
         PathBuf::from("arxiv-pdfs/2001/2001.07824v4.pdf"),
+        PathBuf::from("arxiv-pdfs/2207/2207.10553v2.pdf"),
     ];
 
     for month_year in month_years {
@@ -55,7 +58,12 @@ fn process_month_year(path: &Path, ignored_paths: &[PathBuf]) -> anyhow::Result<
             && path.extension().and_then(|s| s.to_str()) == Some("pdf")
             && !ignored_paths.contains(&path)
         {
-            let file_options = pdf::file::FileOptions::uncached();
+            let file_options = pdf::file::FileOptions::uncached().parse_options(ParseOptions {
+                allow_error_in_option: true,
+                allow_xref_error: false,
+                allow_invalid_ops: false,
+                allow_missing_endobj: false,
+            });
             match file_options.open(&path) {
                 Ok(pdf_file) => {
                     if let Some(dict) = pdf_file.trailer.info_dict {
