@@ -16,6 +16,8 @@ function load_data()
 
     df = vcat(map(read_yearmonth_data, yearmonths)...)
 
+    CSV.write("all.csv", df)
+
     Base.summarysize(df)
 
     df
@@ -43,7 +45,8 @@ function title_length_no_zero(df)
 end
 
 function has_title(df)
-	df.has_title = map(isempty, coalesce.(df.title, ""))
+  notempty(s) = !isempty(s)
+	df.has_title = map(notempty, coalesce.(df.title, ""))
 	grouped = combine(groupby(df, [:has_title, :yearmonth]), nrow)
 	d = data(grouped)
   m = mapping(:yearmonth => nonnumeric => "year & month", :nrow => "count", color=:has_title => renamer(true => "has title", false => "has no title") => "", dodge=:has_title)
@@ -53,7 +56,8 @@ function has_title(df)
 end
 
 function has_title_alt(df)
-	df.has_title = map(isempty, coalesce.(df.title, ""))
+  notempty(s) = !isempty(s)
+	df.has_title = map(notempty, coalesce.(df.title, ""))
 	grouped = combine(groupby(df, [:has_title, :yearmonth]), nrow)
 
 	d = data(grouped)
@@ -84,7 +88,8 @@ function author_length_no_zero(df)
 end
 
 function has_author(df)
-	df.has_author = map(isempty, coalesce.(df.author, ""))
+  notempty(s) = !isempty(s)
+	df.has_author = map(notempty, coalesce.(df.author, ""))
 	grouped = combine(groupby(df, [:has_author, :yearmonth]), nrow)
 	d = data(grouped)
   m = mapping(:yearmonth => nonnumeric => "year & month", :nrow => "count", color=:has_author => renamer(true => "has author", false => "has no author") => "", dodge=:has_author)
@@ -94,7 +99,8 @@ function has_author(df)
 end
 
 function has_author_alt(df)
-	df.has_author = map(isempty, coalesce.(df.author, ""))
+  notempty(s) = !isempty(s)
+	df.has_author = map(notempty, coalesce.(df.author, ""))
 	grouped = combine(groupby(df, [:has_author, :yearmonth]), nrow)
 	d = data(grouped)
 	m = mapping(:yearmonth => nonnumeric, :nrow, color=:has_author => nonnumeric, linestyle=:has_author => nonnumeric)
