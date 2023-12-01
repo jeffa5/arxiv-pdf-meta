@@ -19,6 +19,8 @@ julia --project=.
 
 ## Datasets
 
+_If you don't have the space, time or need to download extra datasets, you can use the `all.csv` file in the root of this repo._
+
 The notebook does not currently download the datasets itself, instead it expects them to be in a certain location.
 
 ```sh
